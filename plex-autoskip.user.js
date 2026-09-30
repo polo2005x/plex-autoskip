@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Plex Auto Skip
 // @namespace    https://github.com/polo2005x/plex-autoskip
-// @version      3.2.2
+// @version      3.3.0
 // @description  Auto-click Skip Intro / Skip Credits / Play Next in Plex Web. Toggle each from a small on-screen panel. Language-independent (matches stable attributes, not button text).
 // @author       polo2005x
 // @homepageURL  https://github.com/polo2005x/plex-autoskip
@@ -86,6 +86,16 @@
   }
   function setSetting(key, value) {
     try { localStorage.setItem(LS_PREFIX + key, value ? '1' : '0'); } catch (e) {}
+  }
+  function getNum(key) {
+    try { const v = localStorage.getItem(LS_PREFIX + key); return v === null ? null : parseFloat(v); }
+    catch (e) { return null; }
+  }
+  function setNum(key, value) {
+    try { localStorage.setItem(LS_PREFIX + key, String(value)); } catch (e) {}
+  }
+  function clearKey(key) {
+    try { localStorage.removeItem(LS_PREFIX + key); } catch (e) {}
   }
 
   /* ============================================================
@@ -210,12 +220,13 @@
       boxShadow: '0 2px 8px rgba(0,0,0,0.4)', maxWidth: '170px',
     });
 
-    // Header (click to collapse/expand)
+    // Header: click to collapse/expand, drag to move, double-click to reset position.
     const header = document.createElement('div');
     Object.assign(header.style, {
-      display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer',
+      display: 'flex', alignItems: 'center', gap: '6px', cursor: 'move',
       fontWeight: '600', color: '#e5a00d', /* Plex gold */
     });
+    header.title = 'Drag to move · double-click to reset position';
     const caret = document.createElement('span');
     caret.textContent = collapsed ? '▸' : '▾';
     const title = document.createElement('span');
@@ -252,17 +263,77 @@
     }
     panel.appendChild(body);
 
+    // --- Drag to move (persisted as left/top) ---
+    let dragStart = null;
+    let didDrag = false;
+    header.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      const rect = panel.getBoundingClientRect();
+      dragStart = { x: e.clientX, y: e.clientY, left: rect.left, top: rect.top };
+      didDrag = false;
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (!dragStart) return;
+      const dx = e.clientX - dragStart.x, dy = e.clientY - dragStart.y;
+      if (!didDrag && Math.hypot(dx, dy) < 4) return; // ignore tiny jitters = click
+      didDrag = true;
+      const rect = panel.getBoundingClientRect();
+      const left = Math.max(0, Math.min(window.innerWidth - rect.width, dragStart.left + dx));
+      const top  = Math.max(0, Math.min(window.innerHeight - rect.height, dragStart.top + dy));
+      Object.assign(panel.style, { left: left + 'px', top: top + 'px', right: 'auto', bottom: 'auto' });
+    });
+    document.addEventListener('mouseup', () => {
+      if (dragStart && didDrag) {
+        const rect = panel.getBoundingClientRect();
+        setNum('panelLeft', Math.round(rect.left));
+        setNum('panelTop', Math.round(rect.top));
+      }
+      dragStart = null;
+    });
+
+    // Click header to collapse/expand (suppressed right after a drag).
     header.addEventListener('click', () => {
+      if (didDrag) { didDrag = false; return; }
       const nowCollapsed = body.style.display !== 'none';
       body.style.display = nowCollapsed ? 'none' : 'block';
       caret.textContent = nowCollapsed ? '▸' : '▾';
       setSetting('_panelCollapsed', nowCollapsed);
     });
 
+    // Double-click header to reset to the default (PANEL_RIGHT_PX / PANEL_BOTTOM_PX).
+    header.addEventListener('dblclick', () => {
+      clearKey('panelLeft');
+      clearKey('panelTop');
+      applyStoredPosition(panel);
+    });
+
     panel.addEventListener('mouseenter', () => { panelHovered = true; updatePanelVisibility(); });
     panel.addEventListener('mouseleave', () => { panelHovered = false; });
 
     document.body.appendChild(panel);
+    applyStoredPosition(panel);
+  }
+
+  // Apply a saved drag position (left/top), or fall back to the default anchor
+  // (PANEL_RIGHT_PX / PANEL_BOTTOM_PX). Clamps into view in case the window shrank.
+  function applyStoredPosition(panel) {
+    const left = getNum('panelLeft');
+    const top = getNum('panelTop');
+    if (left !== null && top !== null) {
+      const rect = panel.getBoundingClientRect();
+      const w = rect.width || 150, h = rect.height || 30;
+      const clampedLeft = Math.max(0, Math.min(window.innerWidth - w, left));
+      const clampedTop = Math.max(0, Math.min(window.innerHeight - h, top));
+      Object.assign(panel.style, {
+        left: clampedLeft + 'px', top: clampedTop + 'px', right: 'auto', bottom: 'auto',
+      });
+    } else {
+      Object.assign(panel.style, {
+        left: 'auto', top: 'auto',
+        right: PANEL_RIGHT_PX + 'px', bottom: PANEL_BOTTOM_PX + 'px',
+      });
+    }
   }
 
   // Show the panel only while watching AND the controls would be up: recent mouse/

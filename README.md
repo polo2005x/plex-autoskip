@@ -38,6 +38,9 @@ screens. Click its header to collapse/expand it; tick/untick each action:
 - Play Next
 - Console log (debug logging)
 
+**Drag** the panel by its "Auto Skip" header to reposition it anywhere; the spot is
+remembered. **Double-click** the header to reset it to the default position.
+
 Changes apply immediately and are remembered (stored in `localStorage`).
 
 > The panel is used instead of a Violentmonkey menu on purpose: the script runs
