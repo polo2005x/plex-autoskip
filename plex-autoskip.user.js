@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Plex Auto Skip
 // @namespace    https://github.com/polo2005x/plex-autoskip
-// @version      3.0.0
+// @version      3.1.0
 // @description  Auto-click Skip Intro / Skip Credits / Play Next in Plex Web. Toggle each from a small on-screen panel. Language-independent (matches stable attributes, not button text).
 // @author       polo2005x
 // @homepageURL  https://github.com/polo2005x/plex-autoskip
@@ -91,6 +91,14 @@
   const clicked = new WeakSet();
   const pending = new WeakSet();
 
+  // The panel is only shown while a video is actually on screen (i.e. playing),
+  // not on the home/browse screens. Matches Plex's media <video> element.
+  const VIDEO_SELECTOR = 'video[class*="HTMLMedia-mediaElement"], video';
+  function isWatching() {
+    const v = document.querySelector(VIDEO_SELECTOR);
+    return !!(v && v.isConnected && v.getClientRects().length > 0);
+  }
+
   function log(...args) {
     if (getSetting('debug')) console.log(TAG, ...args);
   }
@@ -175,6 +183,7 @@
    *  ON-PAGE TOGGLE PANEL
    * ============================================================ */
   const PANEL_ID = 'plex-auto-skip-panel';
+  let panelEl = null;
 
   function buildPanel() {
     if (!document.body || document.getElementById(PANEL_ID)) return;
@@ -182,8 +191,10 @@
     const collapsed = getSetting('_panelCollapsed');
 
     const panel = document.createElement('div');
+    panelEl = panel;
     panel.id = PANEL_ID;
     Object.assign(panel.style, {
+      display: 'none', // shown only while watching (see updatePanelVisibility)
       position: 'fixed', left: '10px', bottom: '10px', zIndex: '2147483647',
       font: '12px/1.4 -apple-system,Segoe UI,Roboto,sans-serif',
       color: '#fff', background: 'rgba(20,20,20,0.88)',
@@ -244,9 +255,14 @@
     document.body.appendChild(panel);
   }
 
-  // Re-add the panel if Plex ever wipes the body.
+  function updatePanelVisibility() {
+    if (panelEl) panelEl.style.display = isWatching() ? '' : 'none';
+  }
+
+  // Re-add the panel if Plex ever wipes the body, and sync its visibility.
   function ensurePanel() {
     if (document.body && !document.getElementById(PANEL_ID)) buildPanel();
+    updatePanelVisibility();
   }
 
   /* ============================================================

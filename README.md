@@ -28,8 +28,9 @@ Works on:
 
 ## Usage
 
-A small **Auto Skip** panel appears at the bottom-left of Plex. Click its header to
-collapse/expand it; tick/untick each action:
+A small **Auto Skip** panel appears at the bottom-left **while a video is playing**
+(it stays hidden on the home/browse screens). Click its header to collapse/expand
+it; tick/untick each action:
 
 - Skip Intro
 - Skip Credits
