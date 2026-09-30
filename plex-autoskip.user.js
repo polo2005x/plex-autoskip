@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Plex Auto Skip
 // @namespace    https://github.com/polo2005x/plex-autoskip
-// @version      3.1.0
+// @version      3.2.0
 // @description  Auto-click Skip Intro / Skip Credits / Play Next in Plex Web. Toggle each from a small on-screen panel. Language-independent (matches stable attributes, not button text).
 // @author       polo2005x
 // @homepageURL  https://github.com/polo2005x/plex-autoskip
@@ -43,6 +43,8 @@
   const CLICK_DELAY_MS     = 500;  // wait after a button appears before clicking
   const RESCAN_INTERVAL_MS = 1000; // safety-net re-scan (catches CSS fade-ins that
                                    // fire no DOM mutation, e.g. Play Next). 0 = off.
+  const PANEL_IDLE_MS      = 3000; // hide the panel this long after the last mouse/
+                                   // key activity (mirrors Plex's control overlay).
 
   /* ============================================================
    *  DETECTION
@@ -184,6 +186,8 @@
    * ============================================================ */
   const PANEL_ID = 'plex-auto-skip-panel';
   let panelEl = null;
+  let panelHovered = false;
+  let lastActivity = Date.now();
 
   function buildPanel() {
     if (!document.body || document.getElementById(PANEL_ID)) return;
@@ -252,11 +256,24 @@
       setSetting('_panelCollapsed', nowCollapsed);
     });
 
+    panel.addEventListener('mouseenter', () => { panelHovered = true; updatePanelVisibility(); });
+    panel.addEventListener('mouseleave', () => { panelHovered = false; });
+
     document.body.appendChild(panel);
   }
 
+  // Show the panel only while watching AND the controls would be up: recent mouse/
+  // key activity, the video is paused, or the pointer is over the panel itself.
   function updatePanelVisibility() {
-    if (panelEl) panelEl.style.display = isWatching() ? '' : 'none';
+    if (!panelEl) return;
+    let show = isWatching();
+    if (show) {
+      const v = document.querySelector(VIDEO_SELECTOR);
+      const paused = !!(v && v.paused);
+      const active = (Date.now() - lastActivity) < PANEL_IDLE_MS;
+      show = paused || active || panelHovered;
+    }
+    panelEl.style.display = show ? '' : 'none';
   }
 
   // Re-add the panel if Plex ever wipes the body, and sync its visibility.
@@ -270,6 +287,13 @@
    * ============================================================ */
   function start() {
     ensurePanel();
+
+    // Track activity so the panel follows the player controls' show/hide.
+    const bump = () => { lastActivity = Date.now(); updatePanelVisibility(); };
+    for (const ev of ['mousemove', 'mousedown', 'keydown', 'touchstart', 'wheel']) {
+      document.addEventListener(ev, bump, { passive: true, capture: true });
+    }
+    setInterval(updatePanelVisibility, 500); // re-hide after idle
 
     new MutationObserver(() => { queueScan(); ensurePanel(); })
       .observe(document.documentElement, {

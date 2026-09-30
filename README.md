@@ -28,9 +28,10 @@ Works on:
 
 ## Usage
 
-A small **Auto Skip** panel appears at the bottom-left **while a video is playing**
-(it stays hidden on the home/browse screens). Click its header to collapse/expand
-it; tick/untick each action:
+A small **Auto Skip** panel appears at the bottom-left **together with the player
+controls** — it shows when you move the mouse (or while paused) during playback and
+auto-hides with the controls after a few seconds, staying hidden on the home/browse
+screens. Click its header to collapse/expand it; tick/untick each action:
 
 - Skip Intro
 - Skip Credits
