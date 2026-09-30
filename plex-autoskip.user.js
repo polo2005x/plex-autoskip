@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Plex Auto Skip
 // @namespace    https://github.com/polo2005x/plex-autoskip
-// @version      3.2.1
+// @version      3.2.2
 // @description  Auto-click Skip Intro / Skip Credits / Play Next in Plex Web. Toggle each from a small on-screen panel. Language-independent (matches stable attributes, not button text).
 // @author       polo2005x
 // @homepageURL  https://github.com/polo2005x/plex-autoskip
@@ -45,8 +45,8 @@
                                    // fire no DOM mutation, e.g. Play Next). 0 = off.
   const PANEL_IDLE_MS      = 3000; // hide the panel this long after the last mouse/
                                    // key activity (mirrors Plex's control overlay).
-  const PANEL_RIGHT_PX     = 70;   // gap from the right edge (clears audio controls)
-  const PANEL_BOTTOM_PX    = 80;   // gap from the bottom edge (sits above the bar)
+  const PANEL_RIGHT_PX     = 30;   // gap from the right edge (clears audio controls)
+  const PANEL_BOTTOM_PX    = 2;    // gap from the bottom edge (sits above the bar)
 
   /* ============================================================
    *  DETECTION
