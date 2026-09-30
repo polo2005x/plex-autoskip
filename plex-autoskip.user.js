@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Plex Auto Skip
 // @namespace    https://github.com/polo2005x/plex-autoskip
-// @version      2.0.0
+// @version      2.0.1
 // @description  Auto-click Skip Intro / Skip Credits / Play Next in Plex Web. Toggle each from the Violentmonkey menu. Language-independent (matches stable attributes, not button text).
-// @author       polo2005
+// @author       polo2005x
 // @homepageURL  https://github.com/polo2005x/plex-autoskip
 // @supportURL   https://github.com/polo2005x/plex-autoskip/issues
 // @downloadURL  https://raw.githubusercontent.com/polo2005x/plex-autoskip/main/plex-autoskip.user.js
@@ -12,6 +12,7 @@
 // @include      /^https?:\/\/[^/]+\.plex\.direct(:\d+)?\/web\/.*$/
 // @include      /^https?:\/\/[^/]+:32400\/web\/.*$/
 // @run-at       document-start
+// @inject-into  page
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
