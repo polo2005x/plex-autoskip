@@ -7,7 +7,7 @@ Plex Web has no built-in "auto skip" setting, and no way to shorten the auto-pla
 ## Features
 
 - **Auto-clicks** Skip Intro, Skip Credits, and Play Next as they appear.
-- **Per-action toggles** from the Violentmonkey menu — no editing required, choices are remembered.
+- **Per-action toggles** from a small on-screen panel — no editing required, choices are remembered.
 - **Language-independent detection** — finds buttons by stable CSS classes, not their text, so it works in any Plex UI language.
 - **Efficient** — driven by a `MutationObserver` with a light once-per-second safety-net re-scan (for buttons that fade in without firing a DOM mutation).
 - Never clicks the same button twice; short configurable delay before clicking.
@@ -28,16 +28,20 @@ Works on:
 
 ## Usage
 
-Click the **Violentmonkey icon** while on a Plex tab to toggle each action:
+A small **Auto Skip** panel appears at the bottom-left of Plex. Click its header to
+collapse/expand it; tick/untick each action:
 
-```
-✅ Skip Intro: ON
-✅ Skip Credits: ON
-✅ Play Next: ON
-✅ Console logging: ON
-```
+- Skip Intro
+- Skip Credits
+- Play Next
+- Console log (debug logging)
 
-Toggles are saved and apply on the next reload.
+Changes apply immediately and are remembered (stored in `localStorage`).
+
+> The panel is used instead of a Violentmonkey menu on purpose: the script runs
+> with `@grant none` so it executes in the page context. That's required for the
+> synthetic clicks to reach Plex's React handlers — a sandboxed script (which any
+> `@grant GM_*` enables) can focus the buttons but its clicks don't register.
 
 ## Configuration
 
