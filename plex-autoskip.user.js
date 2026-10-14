@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Plex Auto Skip
 // @namespace    https://github.com/polo2005x/plex-autoskip
-// @version      3.3.0
+// @version      3.4.0
 // @description  Auto-click Skip Intro / Skip Credits / Play Next in Plex Web. Toggle each from a small on-screen panel. Language-independent (matches stable attributes, not button text).
 // @author       polo2005x
 // @homepageURL  https://github.com/polo2005x/plex-autoskip
@@ -285,9 +285,20 @@
     });
     document.addEventListener('mouseup', () => {
       if (dragStart && didDrag) {
+        // Save the position anchored to the NEAREST horizontal + vertical edge, so
+        // it sticks to that corner/side when the window is resized or moved.
         const rect = panel.getBoundingClientRect();
-        setNum('panelLeft', Math.round(rect.left));
-        setNum('panelTop', Math.round(rect.top));
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const hAnchor = cx > window.innerWidth / 2 ? 1 : 0;  // 0=left, 1=right
+        const vAnchor = cy > window.innerHeight / 2 ? 1 : 0; // 0=top,  1=bottom
+        const hOffset = hAnchor ? window.innerWidth - rect.right : rect.left;
+        const vOffset = vAnchor ? window.innerHeight - rect.bottom : rect.top;
+        setNum('panelHAnchor', hAnchor);
+        setNum('panelVAnchor', vAnchor);
+        setNum('panelHOffset', Math.round(Math.max(0, hOffset)));
+        setNum('panelVOffset', Math.round(Math.max(0, vOffset)));
+        applyStoredPosition(panel); // switch from left/top drag coords to edge anchors
       }
       dragStart = null;
     });
@@ -303,8 +314,8 @@
 
     // Double-click header to reset to the default (PANEL_RIGHT_PX / PANEL_BOTTOM_PX).
     header.addEventListener('dblclick', () => {
-      clearKey('panelLeft');
-      clearKey('panelTop');
+      clearKey('panelHAnchor'); clearKey('panelVAnchor');
+      clearKey('panelHOffset'); clearKey('panelVOffset');
       applyStoredPosition(panel);
     });
 
@@ -315,21 +326,19 @@
     applyStoredPosition(panel);
   }
 
-  // Apply a saved drag position (left/top), or fall back to the default anchor
-  // (PANEL_RIGHT_PX / PANEL_BOTTOM_PX). Clamps into view in case the window shrank.
+  // Apply the saved position as an offset from the nearest edges (so it sticks to
+  // that corner/side on resize), or fall back to the default bottom-right anchor.
   function applyStoredPosition(panel) {
-    const left = getNum('panelLeft');
-    const top = getNum('panelTop');
-    if (left !== null && top !== null) {
-      const rect = panel.getBoundingClientRect();
-      const w = rect.width || 150, h = rect.height || 30;
-      const clampedLeft = Math.max(0, Math.min(window.innerWidth - w, left));
-      const clampedTop = Math.max(0, Math.min(window.innerHeight - h, top));
-      Object.assign(panel.style, {
-        left: clampedLeft + 'px', top: clampedTop + 'px', right: 'auto', bottom: 'auto',
-      });
+    const ha = getNum('panelHAnchor'), ho = getNum('panelHOffset');
+    const va = getNum('panelVAnchor'), vo = getNum('panelVOffset');
+    const s = panel.style;
+    if (ha !== null && ho !== null && va !== null && vo !== null) {
+      if (ha === 1) { s.right = ho + 'px'; s.left = 'auto'; }
+      else          { s.left = ho + 'px';  s.right = 'auto'; }
+      if (va === 1) { s.bottom = vo + 'px'; s.top = 'auto'; }
+      else          { s.top = vo + 'px';    s.bottom = 'auto'; }
     } else {
-      Object.assign(panel.style, {
+      Object.assign(s, {
         left: 'auto', top: 'auto',
         right: PANEL_RIGHT_PX + 'px', bottom: PANEL_BOTTOM_PX + 'px',
       });
@@ -361,6 +370,9 @@
    * ============================================================ */
   function start() {
     ensurePanel();
+
+    // Re-apply the edge-anchored position when the window is resized.
+    window.addEventListener('resize', () => { if (panelEl) applyStoredPosition(panelEl); });
 
     // Track activity so the panel follows the player controls' show/hide.
     const bump = () => { lastActivity = Date.now(); updatePanelVisibility(); };

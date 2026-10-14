@@ -38,8 +38,10 @@ screens. Click its header to collapse/expand it; tick/untick each action:
 - Play Next
 - Console log (debug logging)
 
-**Drag** the panel by its "Auto Skip" header to reposition it anywhere; the spot is
-remembered. **Double-click** the header to reset it to the default position.
+**Drag** the panel by its "Auto Skip" header to reposition it anywhere. The spot is
+saved relative to the nearest corner/edge, so it stays put (e.g. bottom-right stays
+bottom-right) when you resize or move the Plex window. **Double-click** the header to
+reset it to the default position.
 
 Changes apply immediately and are remembered (stored in `localStorage`).
 
